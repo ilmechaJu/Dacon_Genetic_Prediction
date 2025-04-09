@@ -1,0 +1,64 @@
+# 데이터 파일
+*.csv
+*.pth
+*.pt
+*.ckpt
+*.h5
+*.hdf5
+*.model
+*.weights
+*.bin
+
+# 모델 체크포인트 디렉토리
+models/
+checkpoints/
+weights/
+saved_models/
+
+# 기타 대용량 파일
+baseline_submit.csv
+sample_submission.csv
+train.csv
+test.csv
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 가상환경
+venv/
+ENV/
+.env
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db 
