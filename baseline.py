@@ -280,3 +280,92 @@ submit.to_csv('./baseline_submit.csv', index=False)
 def validate_data(df):
     assert not df.isnull().any().any(), "데이터에 결측치가 있습니다."
     assert os.path.exists(df['path'].iloc[0]), "이미지 경로가 올바르지 않습니다."
+
+def evaluate_model(model, val_loader, device):
+    model.eval()
+    val_loss = []
+    predictions = []
+    actuals = []
+    
+    with torch.no_grad():
+        for imgs, labels in tqdm(iter(val_loader)):
+            imgs = imgs.float().to(device)
+            labels = labels.to(device)
+            
+            pred = model(imgs)
+            loss = nn.MSELoss()(pred, labels)
+            
+            val_loss.append(loss.item())
+            predictions.append(pred.cpu().numpy())
+            actuals.append(labels.cpu().numpy())
+    
+    predictions = np.concatenate(predictions, axis=0)
+    actuals = np.concatenate(actuals, axis=0)
+    
+    # MSE 계산
+    mse = np.mean((predictions - actuals) ** 2)
+    # RMSE 계산
+    rmse = np.sqrt(mse)
+    # R2 점수 계산
+    r2 = 1 - np.sum((actuals - predictions) ** 2) / np.sum((actuals - np.mean(actuals)) ** 2)
+    
+    return {
+        'mse': mse,
+        'rmse': rmse,
+        'r2': r2,
+        'val_loss': np.mean(val_loss)
+    }
+
+# 모델 로드
+model = BaseModel()
+model_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models', 'best_model.pth')
+model.load_state_dict(torch.load(model_path, weights_only=False)['model_state_dict'])
+model.to(device)
+
+# 평가 실행
+metrics = evaluate_model(model, val_loader, device)
+print(f"MSE: {metrics['mse']:.4f}")
+print(f"RMSE: {metrics['rmse']:.4f}")
+print(f"R2 Score: {metrics['r2']:.4f}")
+print(f"Validation Loss: {metrics['val_loss']:.4f}")
+
+def check_test_predictions(model, test_loader, device):
+    model.eval()
+    predictions = []
+    
+    with torch.no_grad():
+        for imgs in tqdm(iter(test_loader)):
+            imgs = imgs.float().to(device)
+            pred = model(imgs)
+            predictions.append(pred.cpu().numpy())
+    
+    predictions = np.concatenate(predictions, axis=0)
+    
+    # 예측값의 기본 통계 확인
+    print("예측값 통계:")
+    print(f"평균: {np.mean(predictions):.4f}")
+    print(f"표준편차: {np.std(predictions):.4f}")
+    print(f"최소값: {np.min(predictions):.4f}")
+    print(f"최대값: {np.max(predictions):.4f}")
+    
+    return predictions
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+def visualize_predictions(predictions, actuals=None):
+    if actuals is not None:
+        # 실제값과 예측값 비교
+        plt.figure(figsize=(10, 6))
+        plt.scatter(actuals, predictions, alpha=0.5)
+        plt.plot([actuals.min(), actuals.max()], [actuals.min(), actuals.max()], 'r--')
+        plt.xlabel('실제값')
+        plt.ylabel('예측값')
+        plt.title('실제값 vs 예측값')
+        plt.show()
+    
+    # 예측값 분포
+    plt.figure(figsize=(10, 6))
+    sns.histplot(predictions.flatten(), bins=50)
+    plt.title('예측값 분포')
+    plt.show()
